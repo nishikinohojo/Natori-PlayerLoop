@@ -1,3 +1,3 @@
 # Natori-PlayerLoop
-So old that I don't even remember anything. But it just works! I think these things need refactoring so badly.
-It doesn't even have a test. Shame.
+So old that I don't remember anything. But It Just Works! 
+For some reason I publicized this shit but you don't have to use at all.
