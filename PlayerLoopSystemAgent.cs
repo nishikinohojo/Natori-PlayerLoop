@@ -16,7 +16,7 @@ namespace Natori.Unity.PlayerLoop
     /// </summary>
     public sealed class PlayerLoopSystemAgent
     {
-        private readonly struct SearchResult
+        public readonly struct SearchResult
         {
             private readonly PlayerLoopSystemAgent _playerLoopSystemAgent;
 
@@ -40,11 +40,11 @@ namespace Natori.Unity.PlayerLoop
                 _resultSystemListFoundIndex = resultSystemListFoundIndex;
             }
         }
-            
+
         private List<PlayerLoopSystemAgent> _systemList;
-        
+
         private PlayerLoopSystem _selfPlayerLoopSystem;
-            
+
         public PlayerLoopSystemAgent(PlayerLoopSystem playerLoopSystem)
         {
             _selfPlayerLoopSystem = playerLoopSystem;
@@ -66,7 +66,7 @@ namespace Natori.Unity.PlayerLoop
             return Search(updateSystemType).IsFound;
         }
 
-        private SearchResult Search(Type updateSystemType)
+        public SearchResult Search(Type updateSystemType)
         {
             for (int i = 0; i < _systemList.Count; i++)
             {
@@ -75,7 +75,7 @@ namespace Natori.Unity.PlayerLoop
                     return new SearchResult(this,i);
                 }
             }
-                
+
             for (int i = 0; i < _systemList.Count; i++)
             {
                 var result = _systemList[i].Search(updateSystemType);
@@ -84,7 +84,7 @@ namespace Natori.Unity.PlayerLoop
                     return result;
                 }
             }
-                
+
             return new SearchResult();
         }
 
@@ -132,11 +132,23 @@ namespace Natori.Unity.PlayerLoop
                     return true;
                 }
             }
-                
+
             return false;
         }
 
-        public void MoveToAheadOf(Type moveTarget, Type point)
+        public void Clone(Type cloneTarget)
+        {
+            var target = Search(cloneTarget);
+            if (!target.IsFound)
+            {
+                return;
+            }
+
+            var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
+            InsertAhead(cloneTarget,loopSystem);
+        }
+
+        public void MoveToAhead(Type moveTarget, Type point)
         {
             var target = Search(moveTarget);
             if (!target.IsFound)
@@ -147,10 +159,10 @@ namespace Natori.Unity.PlayerLoop
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
             Remove(moveTarget);
-            InsertAheadOf(point,loopSystem);
+            InsertAhead(point,loopSystem);
         }
-        
-        public void MoveToBehindOf(Type moveTarget, Type point)
+
+        public void MoveToBehind(Type moveTarget, Type point)
         {
             var target = Search(moveTarget);
             if (!target.IsFound)
@@ -160,15 +172,11 @@ namespace Natori.Unity.PlayerLoop
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
             Remove(moveTarget);
-            InsertBehindOf(point,loopSystem);
+            InsertBehind(point,loopSystem);
         }
-            
-        public void InsertAheadOf(Type type,PlayerLoopSystem system)
+
+        public void InsertAhead(Type type,PlayerLoopSystem system)
         {
-            if (Has(system.type))
-            {
-                throw new NatoriPlayerLoopException("Already Exists : " + type.ToString());
-            }
             var target = Search(type);
             if (!target.IsFound)
             {
@@ -177,7 +185,7 @@ namespace Natori.Unity.PlayerLoop
             target.OwnerOfFoundLoopSystemAgent._systemList.Insert(target.FoundResultSystemListLocalIndex,new PlayerLoopSystemAgent(system));
         }
 
-        public void InsertBehindOf(Type type,PlayerLoopSystem system)
+        public void InsertBehind(Type type,PlayerLoopSystem system)
         {
             if (Has(system.type))
             {
@@ -197,7 +205,7 @@ namespace Natori.Unity.PlayerLoop
             {
                 _systemList[i].ApplyToPlayerLoopSystemWithoutSetPlayerLoop();
             }
-                
+
             var newSystems = new PlayerLoopSystem[_systemList.Count];
             for (int i = 0; i < newSystems.Length; i++)
             {
@@ -216,7 +224,7 @@ namespace Natori.Unity.PlayerLoop
             {
                 _systemList[i].ApplyToPlayerLoopSystemWithoutSetPlayerLoop();
             }
-                
+
             var newSystems = new PlayerLoopSystem[_systemList.Count];
             for (int i = 0; i < newSystems.Length; i++)
             {
