@@ -1,0 +1,7 @@
+{
+    "name": "com.natori.pool",
+    "version": "1.0.0",
+    "displayName": "Natori.Pool",
+    "description": "Sane implementation of pooling",
+    "unity": "2021.2"
+}
