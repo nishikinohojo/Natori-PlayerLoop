@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.Serialization;
-using JetBrains.Annotations;
 
 namespace Natori.Unity.PlayerLoop
 {
@@ -10,7 +9,7 @@ namespace Natori.Unity.PlayerLoop
         {
         }
 
-        protected NatoriPlayerLoopException([NotNull] SerializationInfo info, StreamingContext context) : base(info, context)
+        protected NatoriPlayerLoopException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 

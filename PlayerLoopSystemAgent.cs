@@ -66,6 +66,7 @@ namespace Natori.Unity.PlayerLoop
             return Search(updateSystemType).IsFound;
         }
 
+        //TODO 同じループを複数入れた際に諸々区別がつかず、取得も一つしかできないためやりづらい件の対応
         public SearchResult Search(Type updateSystemType)
         {
             for (int i = 0; i < _systemList.Count; i++)
@@ -187,10 +188,6 @@ namespace Natori.Unity.PlayerLoop
 
         public void InsertBehind(Type type,PlayerLoopSystem system)
         {
-            if (Has(system.type))
-            {
-                throw new NatoriPlayerLoopException("Already Exists : " + type.ToString());
-            }
             var target = Search(type);
             if (!target.IsFound)
             {
