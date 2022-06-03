@@ -192,7 +192,7 @@ namespace Natori.Unity.PlayerLoop
         }
 
         public void MoveToAhead(Type moveTarget, Type location, SearchFrom moveTargetSearchFrom,
-            SearchFrom movePointSearchFrom)
+            SearchFrom toLocationSearchFrom)
         {
             var target = SearchFirst(moveTarget, moveTargetSearchFrom);
             if (!target.IsFound)
@@ -203,11 +203,11 @@ namespace Natori.Unity.PlayerLoop
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
             Remove(moveTarget);
-            InsertAhead(location, loopSystem, movePointSearchFrom);
+            InsertAhead(location, loopSystem, toLocationSearchFrom);
         }
 
         public void MoveToBehind(Type moveTarget, Type location, SearchFrom moveTargetSearchFrom,
-            SearchFrom insertPointSearchFrom)
+            SearchFrom toLocationSearchFrom)
         {
             var target = SearchFirst(moveTarget, moveTargetSearchFrom);
             if (!target.IsFound)
@@ -218,7 +218,7 @@ namespace Natori.Unity.PlayerLoop
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
             Remove(moveTarget);
-            InsertBehind(location, loopSystem, insertPointSearchFrom);
+            InsertBehind(location, loopSystem, toLocationSearchFrom);
         }
 
         public void InsertAhead(Type type, PlayerLoopSystem system, SearchFrom insertTargetSearchFrom)
