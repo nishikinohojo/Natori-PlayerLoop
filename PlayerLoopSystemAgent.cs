@@ -141,33 +141,46 @@ namespace Natori.Unity.PlayerLoop
             (aResult.LoopSystemAgent, bResult.LoopSystemAgent) = (bResult.LoopSystemAgent, aResult.LoopSystemAgent);
         }
 
-        public bool Remove(Type updateSystemType)
+        public bool RemoveFirst(Type updateSystemType, SearchFrom removeTargetSearchFrom)
         {
-            int index = -1;
-            for (int i = 0; i < _systemList.Count; i++)
+            if (removeTargetSearchFrom == SearchFrom.Front)
             {
-                if (updateSystemType == _systemList[i]._selfPlayerLoopSystem.type)
+                for (int i = 0; i < _systemList.Count; i++)
                 {
-                    index = i;
-                    break;
+                    //前から、とは外側から見ていくものでよいのか？
+                    if (updateSystemType == _systemList[i]._selfPlayerLoopSystem.type)
+                    {
+                        _systemList.RemoveAt(i);
+                        return true;
+                    }
+
+                    if (_systemList[i].RemoveFirst(updateSystemType, removeTargetSearchFrom))
+                    {
+                        return true;
+                    }
                 }
-            }
 
-            if (index != -1)
-            {
-                _systemList.RemoveAt(index);
-                return true;
+                return false;
             }
-
-            foreach (var system in _systemList)
+            else
             {
-                if (system.Remove(updateSystemType))
+                for (int i = 0; i < _systemList.Count; i++)
                 {
-                    return true;
-                }
-            }
+                    //後ろから、とは内側から見ていくものでよいのか？
+                    if (_systemList[i].RemoveFirst(updateSystemType, removeTargetSearchFrom))
+                    {
+                        return true;
+                    }
 
-            return false;
+                    if (updateSystemType == _systemList[i]._selfPlayerLoopSystem.type)
+                    {
+                        _systemList.RemoveAt(i);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
 
@@ -202,7 +215,7 @@ namespace Natori.Unity.PlayerLoop
 
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
-            Remove(moveTarget);
+            RemoveFirst(moveTarget, moveTargetSearchFrom);
             InsertAhead(location, loopSystem, toLocationSearchFrom);
         }
 
@@ -217,7 +230,7 @@ namespace Natori.Unity.PlayerLoop
 
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
-            Remove(moveTarget);
+            RemoveFirst(moveTarget, moveTargetSearchFrom);
             InsertBehind(location, loopSystem, toLocationSearchFrom);
         }
 
