@@ -1,6 +1,6 @@
 {
     "name": "com.natori.playerloop",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "displayName": "Natori.PlayerLoop",
     "description": "Wrapper of PlayerLoop",
     "unity": "2021.2"
