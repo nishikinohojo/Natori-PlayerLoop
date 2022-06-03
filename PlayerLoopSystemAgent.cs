@@ -3,6 +3,7 @@ using System.Collections.Generic;
 #if UNITY_2019_3_OR_NEWER
 using UnityEngine.LowLevel;
 using UnityEngine.PlayerLoop;
+
 #else
 using UnityEngine.Experimental.PlayerLoop;
 using UnityEngine.Experimental.LowLevel;
@@ -10,6 +11,18 @@ using UnityEngine.Experimental.LowLevel;
 
 namespace Natori.Unity.PlayerLoop
 {
+    public enum Placement
+    {
+        Front,
+        Behind
+    }
+
+    public enum SearchFrom
+    {
+        Front,
+        Behind
+    }
+
     /// <summary>
     /// 中身の追加や削除、順番の変更は
     /// ApplyToPlayerLoopSystemが実行されるまでUnity側に反映はされない
@@ -54,6 +67,7 @@ namespace Natori.Unity.PlayerLoop
                 _systemList = new List<PlayerLoopSystemAgent>();
                 return;
             }
+
             _systemList = new List<PlayerLoopSystemAgent>(subSystems.Length);
             for (int i = 0; i < subSystems.Length; i++)
             {
@@ -63,49 +77,68 @@ namespace Natori.Unity.PlayerLoop
 
         public bool Has(Type updateSystemType)
         {
-            return Search(updateSystemType).IsFound;
+            return SearchFirst(updateSystemType).IsFound;
         }
 
-        //TODO 同じループを複数入れた際に諸々区別がつかず、取得も一つしかできないためやりづらい件の対応
-        public SearchResult Search(Type updateSystemType)
+
+        //TODO 同じループを複数入れた際に諸々区別がつかず、取得も一つしかできないためやりづらい件の対応をもうちょいましにしろ 全体的にTypeを生で使わせていることが筋悪い
+        public SearchResult SearchFirst(Type updateSystemType, SearchFrom searchFrom = SearchFrom.Front)
         {
-            for (int i = 0; i < _systemList.Count; i++)
+            if (searchFrom == SearchFrom.Front)
             {
-                if (updateSystemType == _systemList[i]._selfPlayerLoopSystem.type)
+                for (int i = 0; i < _systemList.Count; i++)
                 {
-                    return new SearchResult(this,i);
-                }
-            }
+                    //前から、とは外側から見ていくものでよいのか？
+                    if (updateSystemType == _systemList[i]._selfPlayerLoopSystem.type)
+                    {
+                        return new SearchResult(this, i);
+                    }
 
-            for (int i = 0; i < _systemList.Count; i++)
+                    var result = _systemList[i].SearchFirst(updateSystemType, searchFrom);
+                    if (result.IsFound)
+                    {
+                        return result;
+                    }
+                }
+
+                return new SearchResult();
+            }
+            else
             {
-                var result = _systemList[i].Search(updateSystemType);
-                if (result.IsFound)
+                for (int i = _systemList.Count - 1; 0 <= i; i--)
                 {
-                    return result;
-                }
-            }
+                    //後ろから、とは内側から見ていくものでよいのか？
+                    var result = _systemList[i].SearchFirst(updateSystemType, searchFrom);
+                    if (result.IsFound)
+                    {
+                        return result;
+                    }
 
-            return new SearchResult();
+                    if (updateSystemType == _systemList[i]._selfPlayerLoopSystem.type)
+                    {
+                        return new SearchResult(this, i);
+                    }
+                }
+
+                return new SearchResult();
+            }
         }
 
         public void Swap(Type a, Type b)
         {
-            var aResult = Search(a);
+            var aResult = SearchFirst(a);
             if (!aResult.IsFound)
             {
                 return;
             }
 
-            var bResult = Search(b);
+            var bResult = SearchFirst(b);
             if (!bResult.IsFound)
             {
                 return;
             }
 
-            var temp = aResult.LoopSystemAgent;
-            aResult.LoopSystemAgent = bResult.LoopSystemAgent;
-            bResult.LoopSystemAgent = temp;
+            (aResult.LoopSystemAgent, bResult.LoopSystemAgent) = (bResult.LoopSystemAgent, aResult.LoopSystemAgent);
         }
 
         public bool Remove(Type updateSystemType)
@@ -137,21 +170,30 @@ namespace Natori.Unity.PlayerLoop
             return false;
         }
 
-        public void Clone(Type cloneTarget)
+
+        public void Clone(Type cloneTarget, Placement placement)
         {
-            var target = Search(cloneTarget);
+            var target = SearchFirst(cloneTarget);
             if (!target.IsFound)
             {
                 return;
             }
 
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
-            InsertAhead(cloneTarget,loopSystem);
+            switch (placement)
+            {
+                case Placement.Behind:
+                    InsertBehind(cloneTarget, loopSystem);
+                    return;
+                case Placement.Front:
+                    InsertAhead(cloneTarget, loopSystem);
+                    return;
+            }
         }
 
         public void MoveToAhead(Type moveTarget, Type point)
         {
-            var target = Search(moveTarget);
+            var target = SearchFirst(moveTarget);
             if (!target.IsFound)
             {
                 return;
@@ -160,40 +202,45 @@ namespace Natori.Unity.PlayerLoop
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
             Remove(moveTarget);
-            InsertAhead(point,loopSystem);
+            InsertAhead(point, loopSystem);
         }
 
         public void MoveToBehind(Type moveTarget, Type point)
         {
-            var target = Search(moveTarget);
+            var target = SearchFirst(moveTarget);
             if (!target.IsFound)
             {
                 return;
             }
+
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
             Remove(moveTarget);
-            InsertBehind(point,loopSystem);
+            InsertBehind(point, loopSystem);
         }
 
-        public void InsertAhead(Type type,PlayerLoopSystem system)
+        public void InsertAhead(Type type, PlayerLoopSystem system)
         {
-            var target = Search(type);
+            var target = SearchFirst(type);
             if (!target.IsFound)
             {
                 throw new NatoriPlayerLoopException("Not Found : " + type.ToString());
             }
-            target.OwnerOfFoundLoopSystemAgent._systemList.Insert(target.FoundResultSystemListLocalIndex,new PlayerLoopSystemAgent(system));
+
+            target.OwnerOfFoundLoopSystemAgent._systemList.Insert(target.FoundResultSystemListLocalIndex,
+                new PlayerLoopSystemAgent(system));
         }
 
-        public void InsertBehind(Type type,PlayerLoopSystem system)
+        public void InsertBehind(Type type, PlayerLoopSystem system)
         {
-            var target = Search(type);
+            var target = SearchFirst(type);
             if (!target.IsFound)
             {
                 throw new NatoriPlayerLoopException("Not Found : " + type.ToString());
             }
-            target.OwnerOfFoundLoopSystemAgent._systemList.Insert(target.FoundResultSystemListLocalIndex + 1,new PlayerLoopSystemAgent(system));
+
+            target.OwnerOfFoundLoopSystemAgent._systemList.Insert(target.FoundResultSystemListLocalIndex + 1,
+                new PlayerLoopSystemAgent(system));
         }
 
         public void ApplyToPlayerLoopSystem()
@@ -208,6 +255,7 @@ namespace Natori.Unity.PlayerLoop
             {
                 newSystems[i] = _systemList[i]._selfPlayerLoopSystem;
             }
+
             _selfPlayerLoopSystem.subSystemList = newSystems;
 #if UNITY_2019_3_OR_NEWER
             UnityEngine.LowLevel.PlayerLoop.SetPlayerLoop(_selfPlayerLoopSystem);
@@ -215,6 +263,7 @@ namespace Natori.Unity.PlayerLoop
             UnityEngine.Experimental.LowLevel.PlayerLoop.SetPlayerLoop(_selfPlayerLoopSystem);
 #endif
         }
+
         private void ApplyToPlayerLoopSystemWithoutSetPlayerLoop()
         {
             for (int i = 0; i < _systemList.Count; i++)
@@ -227,6 +276,7 @@ namespace Natori.Unity.PlayerLoop
             {
                 newSystems[i] = _systemList[i]._selfPlayerLoopSystem;
             }
+
             _selfPlayerLoopSystem.subSystemList = newSystems;
         }
     }
