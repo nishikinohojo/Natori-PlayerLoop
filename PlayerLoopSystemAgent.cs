@@ -77,12 +77,12 @@ namespace Natori.Unity.PlayerLoop
 
         public bool Has(Type updateSystemType)
         {
-            return SearchFirst(updateSystemType).IsFound;
+            return SearchFirst(updateSystemType, SearchFrom.Front).IsFound;
         }
 
 
         //TODO 同じループを複数入れた際に諸々区別がつかず、取得も一つしかできないためやりづらい件の対応をもうちょいましにしろ 全体的にTypeを生で使わせていることが筋悪い
-        public SearchResult SearchFirst(Type updateSystemType, SearchFrom searchFrom = SearchFrom.Front)
+        public SearchResult SearchFirst(Type updateSystemType, SearchFrom searchFrom)
         {
             if (searchFrom == SearchFrom.Front)
             {
@@ -124,15 +124,15 @@ namespace Natori.Unity.PlayerLoop
             }
         }
 
-        public void Swap(Type a, Type b)
+        public void Swap(Type a, Type b, SearchFrom aSearchFrom, SearchFrom bSearchFrom)
         {
-            var aResult = SearchFirst(a);
+            var aResult = SearchFirst(a, aSearchFrom);
             if (!aResult.IsFound)
             {
                 return;
             }
 
-            var bResult = SearchFirst(b);
+            var bResult = SearchFirst(b, bSearchFrom);
             if (!bResult.IsFound)
             {
                 return;
@@ -171,9 +171,9 @@ namespace Natori.Unity.PlayerLoop
         }
 
 
-        public void Clone(Type cloneTarget, Placement placement)
+        public void Clone(Type cloneTarget, Placement placement, SearchFrom cloneTargetSearchFrom)
         {
-            var target = SearchFirst(cloneTarget);
+            var target = SearchFirst(cloneTarget, cloneTargetSearchFrom);
             if (!target.IsFound)
             {
                 return;
@@ -183,17 +183,18 @@ namespace Natori.Unity.PlayerLoop
             switch (placement)
             {
                 case Placement.Behind:
-                    InsertBehind(cloneTarget, loopSystem);
+                    InsertBehind(cloneTarget, loopSystem, cloneTargetSearchFrom);
                     return;
                 case Placement.Front:
-                    InsertAhead(cloneTarget, loopSystem);
+                    InsertAhead(cloneTarget, loopSystem, cloneTargetSearchFrom);
                     return;
             }
         }
 
-        public void MoveToAhead(Type moveTarget, Type point)
+        public void MoveToAhead(Type moveTarget, Type location, SearchFrom moveTargetSearchFrom,
+            SearchFrom movePointSearchFrom)
         {
-            var target = SearchFirst(moveTarget);
+            var target = SearchFirst(moveTarget, moveTargetSearchFrom);
             if (!target.IsFound)
             {
                 return;
@@ -202,12 +203,13 @@ namespace Natori.Unity.PlayerLoop
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
             Remove(moveTarget);
-            InsertAhead(point, loopSystem);
+            InsertAhead(location, loopSystem, movePointSearchFrom);
         }
 
-        public void MoveToBehind(Type moveTarget, Type point)
+        public void MoveToBehind(Type moveTarget, Type location, SearchFrom moveTargetSearchFrom,
+            SearchFrom insertPointSearchFrom)
         {
-            var target = SearchFirst(moveTarget);
+            var target = SearchFirst(moveTarget, moveTargetSearchFrom);
             if (!target.IsFound)
             {
                 return;
@@ -216,12 +218,12 @@ namespace Natori.Unity.PlayerLoop
             var loopSystem = target.LoopSystemAgent._selfPlayerLoopSystem;
 
             Remove(moveTarget);
-            InsertBehind(point, loopSystem);
+            InsertBehind(location, loopSystem, insertPointSearchFrom);
         }
 
-        public void InsertAhead(Type type, PlayerLoopSystem system)
+        public void InsertAhead(Type type, PlayerLoopSystem system, SearchFrom insertTargetSearchFrom)
         {
-            var target = SearchFirst(type);
+            var target = SearchFirst(type, insertTargetSearchFrom);
             if (!target.IsFound)
             {
                 throw new NatoriPlayerLoopException("Not Found : " + type.ToString());
@@ -231,9 +233,9 @@ namespace Natori.Unity.PlayerLoop
                 new PlayerLoopSystemAgent(system));
         }
 
-        public void InsertBehind(Type type, PlayerLoopSystem system)
+        public void InsertBehind(Type type, PlayerLoopSystem system, SearchFrom insertTargetSearchFrom)
         {
-            var target = SearchFirst(type);
+            var target = SearchFirst(type, insertTargetSearchFrom);
             if (!target.IsFound)
             {
                 throw new NatoriPlayerLoopException("Not Found : " + type.ToString());
