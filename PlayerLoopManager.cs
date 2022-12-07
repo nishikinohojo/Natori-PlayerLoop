@@ -19,11 +19,11 @@ namespace Natori.Unity.PlayerLoop
 
         public PlayerLoopSystemAgent CurrentLoopSystemAgent => _currentLoopSystemAgent;
 
-        public PlayerLoopManager()
+        public PlayerLoopManager(bool useDefaultPlayerLoop = false)
         {
-            
+
 #if UNITY_2019_3_OR_NEWER
-            var currentLoopSystem = UnityEngine.LowLevel.PlayerLoop.GetCurrentPlayerLoop();
+            var currentLoopSystem = (useDefaultPlayerLoop)?UnityEngine.LowLevel.PlayerLoop.GetDefaultPlayerLoop():UnityEngine.LowLevel.PlayerLoop.GetCurrentPlayerLoop();
 #else
             var currentLoopSystem = UnityEngine.Experimental.LowLevel.PlayerLoop.GetDefaultPlayerLoop();
 #endif
